@@ -9,7 +9,7 @@
   "packages": [
     {
       "id": "youtube.leanback.v4",
-      "title": "YouTube AdFree (Zucchiniii)",
+      "title": "YouTube AdFree",
       "iconUri": "https://zucchiniii.github.io/youtube-webos/icon.png",
       "manifestUrl": "https://github.com/Zucchiniii/youtube-webos/releases/latest/download/youtube.leanback.v4.manifest.json",
       "fullDescriptionUrl": "https://zucchiniii.github.io/youtube-webos/homebrew-description.html",
