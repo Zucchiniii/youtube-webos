@@ -87,7 +87,7 @@ You need [Homebrew Channel](https://github.com/webosbrew/webos-homebrew-channel)
    https://zucchiniii.github.io/youtube-webos/repo.json
    ```
 
-3. Go back to the app list, open **YouTube AdFree** and select **Install**.
+3. Go back to the app list, open **YouTube AdFree (Zucchiniii)** and select **Install**. The default webosbrew repository also lists the original "YouTube AdFree"; pick the one marked Zucchiniii.
 
 That's it. Homebrew Channel will offer updates whenever a new version is released.
 
