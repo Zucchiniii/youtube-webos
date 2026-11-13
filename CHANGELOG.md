@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [1.2.1] - 2026/11/13
+
+### Changed
+
+- New app icon: a red play button glowing on black
+- Easier install: the Homebrew Channel repository is now `https://zucchiniii.github.io/youtube-webos/repo.json` (the old address keeps working), listed as "YouTube AdFree (Zucchiniii)" so it can't be mixed up with the original, with a description, screenshot and link on its Homebrew Channel page
+- Rewritten README and a new website at https://zucchiniii.github.io/youtube-webos/
+
 ## [1.2.0] - 2026/11/13
 
 ### Added

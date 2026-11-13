@@ -23,8 +23,7 @@ fs.writeFileSync(
     title: appinfo.title,
     appDescription:
       'Ad-free YouTube with SponsorBlock, HD thumbnails and settings inside YouTube Settings.',
-    iconUri:
-      'https://raw.githubusercontent.com/Zucchiniii/youtube-webos/main/assets/largeIcon.png',
+    iconUri: 'https://zucchiniii.github.io/youtube-webos/icon.png',
     sourceUrl: 'https://github.com/Zucchiniii/youtube-webos',
     rootRequired: false,
     ipkUrl: ipkfile,
