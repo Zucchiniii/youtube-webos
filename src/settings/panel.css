@@ -1,0 +1,144 @@
+.ytaf-panel-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1100;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.55);
+}
+
+.ytaf-panel-backdrop.ytaf-visible {
+  display: flex;
+}
+
+.ytaf-panel {
+  display: flex;
+  flex-direction: column;
+  width: 56rem;
+  max-width: 88vw;
+  height: 84vh;
+  border-radius: 1.5rem;
+  background: #212121;
+  color: #f1f1f1;
+  font-family: Roboto, Arial, Helvetica, sans-serif;
+  box-shadow: 0 1.5rem 4rem rgba(0, 0, 0, 0.6);
+  overflow: hidden;
+}
+
+.ytaf-panel-header {
+  padding: 1.75rem 2.25rem 1rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.ytaf-panel-title {
+  font-size: 2rem;
+  font-weight: 700;
+}
+
+.ytaf-panel-sub {
+  margin-top: 0.25rem;
+  font-size: 1.05rem;
+  color: #aaa;
+}
+
+.ytaf-panel-list {
+  flex: 1;
+  padding: 0.75rem 1.25rem 1.5rem;
+  overflow-y: auto;
+  scrollbar-width: none;
+}
+
+.ytaf-panel-list::-webkit-scrollbar {
+  display: none;
+}
+
+.ytaf-section {
+  margin: 1.25rem 1rem 0.5rem;
+  font-size: 1rem;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #aaa;
+}
+
+.ytaf-row {
+  display: flex;
+  align-items: center;
+  gap: 1.1rem;
+  padding: 0.8rem 1rem;
+  border-radius: 1rem;
+  outline: none;
+  cursor: pointer;
+}
+
+.ytaf-row.ytaf-indent {
+  padding-left: 2.5rem;
+}
+
+.ytaf-row.ytaf-focused {
+  background: #f1f1f1;
+  color: #0f0f0f;
+}
+
+.ytaf-row.ytaf-dim:not(.ytaf-focused) {
+  opacity: 0.45;
+}
+
+.ytaf-row-icon {
+  flex: none;
+  width: 2.75rem;
+  height: 2.75rem;
+  background-size: contain;
+  background-repeat: no-repeat;
+}
+
+.ytaf-row-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.ytaf-row-title {
+  font-size: 1.35rem;
+  font-weight: 500;
+}
+
+.ytaf-row-summary {
+  margin-top: 0.15rem;
+  font-size: 1rem;
+  line-height: 1.35;
+  color: #aaa;
+}
+
+.ytaf-row.ytaf-focused .ytaf-row-summary {
+  color: #3f3f3f;
+}
+
+.ytaf-switch {
+  position: relative;
+  flex: none;
+  width: 3.4rem;
+  height: 1.9rem;
+  border-radius: 1rem;
+  background: #5f5f5f;
+  transition: background 0.15s ease;
+}
+
+.ytaf-knob {
+  position: absolute;
+  top: 0.2rem;
+  left: 0.2rem;
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 50%;
+  background: #fff;
+  transition: transform 0.15s ease;
+}
+
+.ytaf-row.ytaf-on .ytaf-switch {
+  background: #3ea6ff;
+}
+
+.ytaf-row.ytaf-on .ytaf-knob {
+  transform: translateX(1.5rem);
+}

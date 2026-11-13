@@ -4,6 +4,30 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [1.0.0] - 2026/11/13
+
+### Added
+
+- AdFree options as native categories in YouTube's Settings page (no colour button needed)
+- Rewritten quick panel (green button) with Swedish/English UI
+- Playback watchdog that recovers videos stuck on a black loading screen
+- "Reset AdFree" and "About AdFree" entries
+
+### Fixed
+
+- Settings occasionally resetting: IndexedDB mirror + guard against YouTube clearing `localStorage`
+- Blurry thumbnails on `<image>` tiles, `i1–i9.ytimg.com` hosts and `hq720` resizes
+- SponsorBlock segments not visible on the progress bar (#445)
+- Max quality switching formats right after start (webOS 25 black screen trigger, #379/#397)
+- Green button toggling twice and YouTube reacting to keys behind the panel
+- Shorts in the newer `lockupViewModel` format not removed
+
+### Changed
+
+- Default build targets webOS 22+ (`build:legacy` for older TVs); userScript 272 KB → 85 KB
+- Single `JSON.parse` hook, no deep clone in `JSON.stringify`, no top-level await
+- HD thumbnails are on by default
+
 ## [0.5.3] - 2026/04/18
 
 ### Fixed

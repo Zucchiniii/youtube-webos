@@ -21,10 +21,11 @@ fs.writeFileSync(
     version: pkgJson.version,
     type: appinfo.type,
     title: appinfo.title,
-    // appDescription: appinfo.appDescription,
+    appDescription:
+      'Ad-free YouTube with SponsorBlock, HD thumbnails and settings inside YouTube Settings.',
     iconUri:
-      'https://raw.githubusercontent.com/webosbrew/youtube-webos/main/assets/largeIcon.png',
-    sourceUrl: 'https://github.com/webosbrew/youtube-webos',
+      'https://raw.githubusercontent.com/Zucchiniii/youtube-webos/main/assets/largeIcon.png',
+    sourceUrl: 'https://github.com/Zucchiniii/youtube-webos',
     rootRequired: false,
     ipkUrl: ipkfile,
     ipkHash: {

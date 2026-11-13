@@ -1,5 +1,14 @@
+// Order matters: storage guard and response/style hooks must be installed
+// before YouTube starts loading data and rendering tiles.
 import 'whatwg-fetch';
 import './domrect-polyfill';
+
+import './config';
+import './hooks/json-parse';
+import './hooks/json-stringify';
+import './hooks';
+import './thumbnail-quality';
+import './app_api/index';
 
 import { handleLaunch } from './utils';
 
@@ -12,20 +21,18 @@ document.addEventListener(
   true
 );
 
-import './app_api/index';
-import './adblock.js';
-import './hooks/json-stringify';
-import './shorts.js';
-import './sponsorblock.js';
-import './ui.js';
+import './adblock';
+import './shorts';
+import './remove-endscreen';
+import './settings/native';
+import './ui';
 import './font-fix.css';
-import './thumbnail-quality';
-import './screensaver-fix';
 import './yt-fixes.css';
+import './sponsorblock.js';
+import './screensaver-fix';
 import './watch.js';
 import './video-quality';
+import './playback-watchdog';
 import './lang-settings-fix';
-import './remove-endscreen';
-import './hooks';
 import './block-webos-cast';
 import './auto-account-select';

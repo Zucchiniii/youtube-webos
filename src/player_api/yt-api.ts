@@ -59,6 +59,24 @@ export interface YTPlayer extends HTMLElement {
 
   getPlaybackQualityLabel(): string; // empty if not available
 
+  getPlaybackQuality(): string;
+
+  getAvailableQualityLevels(): string[];
+
+  getPlayerState(): PlayerState;
+
+  getCurrentTime(): number;
+
+  getDuration(): number;
+
+  getVideoLoadedFraction(): number;
+
+  playVideo(): void;
+
+  pauseVideo(): void;
+
+  seekTo(seconds: number, allowSeekAhead?: boolean): void;
+
   /**
    * Not available until first `isPlaying` state of playback.
    *

@@ -3,7 +3,9 @@ import { TransformAsyncModulesPlugin } from 'transform-async-modules-webpack-plu
 import TerserPlugin from 'terser-webpack-plugin';
 import pkgJson from './package.json' with { type: 'json' };
 import webpack from 'webpack';
-import { basename } from 'node:path';
+import { basename, resolve } from 'node:path';
+
+const isLegacy = process.env.BROWSERSLIST_ENV === 'legacy';
 
 /**
  * @param input {Buffer<ArrayBufferLike>}
@@ -29,7 +31,13 @@ const makeConfig = (_env, argv) => [
        * terser doesn't pickup browserlist config
        * See: https://github.com/terser/terser/issues/235
        */
-      minimizer: [new TerserPlugin({ terserOptions: { ecma: 5 } })]
+      minimizer: [
+        new TerserPlugin({
+          terserOptions: {
+            ecma: isLegacy ? 5 : 2020
+          }
+        })
+      ]
     },
 
     entry: {
@@ -41,7 +49,15 @@ const makeConfig = (_env, argv) => [
     },
 
     resolve: {
-      extensions: ['.mjs', '.cjs', '.js', '.json', '.ts']
+      extensions: ['.mjs', '.cjs', '.js', '.json', '.ts'],
+      // fetch and DOMRect are native on webOS 22+; only legacy builds ship
+      // the polyfills.
+      alias: isLegacy
+        ? {}
+        : {
+            'whatwg-fetch': false,
+            [resolve(import.meta.dirname, 'src/domrect-polyfill.js')]: false
+          }
     },
 
     module: {

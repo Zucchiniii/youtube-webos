@@ -1,5 +1,5 @@
 {
-  "checkBrowser": true,
+  "ecmaVersion": "es2022",
   "files": [
     "./dist/**/*.js"
   ]

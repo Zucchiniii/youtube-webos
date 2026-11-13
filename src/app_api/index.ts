@@ -20,26 +20,44 @@ export interface ResolveCommandHook {
   ): unknown;
 }
 
+/**
+ * Runs before the per-command hooks. Return `undefined` to let the command
+ * continue; any other value marks it handled and is returned to YouTube.
+ */
+export type ResolveCommandInterceptor = (
+  payload: ResolveCommandPayload,
+  extra: unknown
+) => unknown;
+
 let registry: ResolveCommandRegistry | null = null;
+let pending: Promise<ResolveCommandRegistry> | null = null;
 
 export class ResolveCommandRegistry {
   #originalFn: ResolveCommand;
   #cmds = new Map<string, ResolveCommandHook>();
+  #interceptors: ResolveCommandInterceptor[] = [];
 
   private resolveCommand = (
-    command: Record<string, unknown>,
+    command: ResolveCommandPayload,
     extra?: unknown
   ) => {
-    console.group(`[${this.constructor.name}] Resolving`);
-    console.debug(`Command:`);
-    console.debug(command);
-    console.debug(`Extra:`);
-    console.debug(extra);
-    console.groupEnd();
+    if (window.__ytaf_debug__) console.debug('[resolveCommand]', command);
 
-    for (const key of Object.keys(command)) {
-      if (this.#cmds.has(key)) {
-        return this.#cmds.get(key)!(this.#originalFn, command, extra);
+    if (command && typeof command === 'object') {
+      for (const interceptor of this.#interceptors) {
+        let res: unknown;
+        try {
+          res = interceptor(command, extra);
+        } catch (err) {
+          console.warn('[resolveCommand] interceptor failed:', err);
+          continue;
+        }
+        if (res !== undefined) return res;
+      }
+
+      for (const key of Object.keys(command)) {
+        const hook = this.#cmds.get(key);
+        if (hook) return hook(this.#originalFn, command, extra);
       }
     }
 
@@ -47,12 +65,6 @@ export class ResolveCommandRegistry {
   };
 
   private constructor(hookTargetName: string) {
-    if (!ResolveCommandRegistry.checkHookTarget(hookTargetName)) {
-      throw new Error(
-        `Hook target "${hookTargetName}" not found in window._yttv`
-      );
-    }
-
     const hookTarget = window._yttv![hookTargetName] as {
       instance: { resolveCommand: ResolveCommand };
     };
@@ -62,8 +74,6 @@ export class ResolveCommandRegistry {
     );
 
     hookTarget.instance.resolveCommand = this.resolveCommand;
-
-    console.debug(`[${this.constructor.name}] Hooked:`, this.#originalFn);
   }
 
   private static checkHookTarget(targetName: string) {
@@ -73,6 +83,7 @@ export class ResolveCommandRegistry {
       target &&
       typeof target === 'function' &&
       'instance' in target &&
+      target.instance &&
       typeof target.instance === 'object' &&
       typeof (target.instance as Record<string, unknown>).resolveCommand ===
         'function'
@@ -80,42 +91,37 @@ export class ResolveCommandRegistry {
   }
 
   private static findHookTarget() {
-    if (typeof window?._yttv !== 'object') return null;
+    if (typeof window._yttv !== 'object' || window._yttv === null) return null;
 
     for (const key in window._yttv) {
-      if (this.checkHookTarget(key)) {
-        return key;
-      }
+      if (this.checkHookTarget(key)) return key;
     }
 
     return null;
   }
 
-  private static async getHookTarget(): Promise<string> {
-    let hook = this.findHookTarget();
+  /** The registry if YouTube's command resolver is already hooked. */
+  static peek(): ResolveCommandRegistry | null {
+    return registry;
+  }
 
-    if (hook) return hook;
+  static getInstance(): Promise<ResolveCommandRegistry> {
+    if (registry) return Promise.resolve(registry);
+    if (pending) return pending;
 
-    return new Promise((resolve) => {
+    pending = new Promise((resolve) => {
       const poll = () => {
-        hook = this.findHookTarget();
-        if (hook) {
-          resolve(hook);
+        const key = this.findHookTarget();
+        if (key) {
+          registry = new ResolveCommandRegistry(key);
+          resolve(registry);
         } else {
-          setTimeout(poll, 0);
+          setTimeout(poll, 25);
         }
       };
       poll();
     });
-  }
-
-  static async getInstance() {
-    if (registry) return registry;
-
-    const key = await this.getHookTarget();
-
-    registry = registry ?? new ResolveCommandRegistry(key);
-    return registry;
+    return pending;
   }
 
   setHook(command: string, fn: ResolveCommandHook) {
@@ -126,9 +132,14 @@ export class ResolveCommandRegistry {
     this.#cmds.delete(command);
   }
 
+  addInterceptor(fn: ResolveCommandInterceptor) {
+    this.#interceptors.push(fn);
+  }
+
+  /** Send a command straight to YouTube, bypassing our hooks. */
   dispatchCommand(payload: ResolveCommandPayload, extra?: unknown) {
     return this.#originalFn(payload, extra);
   }
 }
 
-ResolveCommandRegistry.getInstance();
+void ResolveCommandRegistry.getInstance();

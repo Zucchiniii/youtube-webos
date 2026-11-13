@@ -85,6 +85,6 @@ function toggleWatch(show) {
 
 toggleWatch(configRead('showWatch'));
 
-configAddChangeListener('showWatch', (evt) => {
-  toggleWatch(evt.detail.newValue);
+configAddChangeListener('showWatch', (value) => {
+  toggleWatch(value);
 });

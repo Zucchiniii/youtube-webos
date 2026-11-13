@@ -1,3 +1,9 @@
+# Default build: webOS 22 (2022) and newer – lean bundle, native modern syntax.
+# The LG C5 (webOS 25) and newer are well above this.
+chrome >= 87
+
+# `BROWSERSLIST_ENV=legacy pnpm run build` – every webOS since 1.0.
+[legacy]
 # WAM uses WebKit on webOS 1 and 2
 safari 7 # [WebKit 537.71] for webOS 1 [WebKit 537.41]
 safari 8 # [WebKit 538.35] for webOS 2 [WebKit 538.2]

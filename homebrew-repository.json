@@ -1,0 +1,12 @@
+{
+  "packages": [
+    {
+      "id": "youtube.leanback.v4",
+      "title": "YouTube AdFree",
+      "iconUri": "https://raw.githubusercontent.com/Zucchiniii/youtube-webos/main/assets/largeIcon.png",
+      "manifestUrl": "https://github.com/Zucchiniii/youtube-webos/releases/latest/download/youtube.leanback.v4.manifest.json",
+      "fullDescriptionUrl": "https://github.com/Zucchiniii/youtube-webos#readme",
+      "shortDescription": "Ad-free YouTube for webOS: settings inside YouTube Settings (no colour buttons needed), black-screen recovery, HD thumbnails, SponsorBlock."
+    }
+  ]
+}

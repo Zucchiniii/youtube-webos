@@ -1,4 +1,5 @@
 import Module from 'node:module';
+import { readFileSync } from 'node:fs';
 
 const require = Module.createRequire(import.meta.url);
 
@@ -66,8 +67,16 @@ function makeConfig(api) {
     ]
   };
 
+  // Targets come from .browserslistrc (+ BROWSERSLIST_ENV for legacy builds),
+  // so both must be part of the cache key or switching builds reuses stale
+  // output.
   api.cache.invalidate(
-    () => babelruntimeVersion + corejspureVersion + JSON.stringify(cfg)
+    () =>
+      babelruntimeVersion +
+      corejspureVersion +
+      JSON.stringify(cfg) +
+      readFileSync(new URL('./.browserslistrc', import.meta.url), 'utf8') +
+      (process.env.BROWSERSLIST_ENV ?? '')
   );
 
   return cfg;

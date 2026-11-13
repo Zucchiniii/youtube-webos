@@ -21,20 +21,38 @@
 ## Features
 
 - Ad Blocking
-- [SponsorBlock](https://sponsor.ajay.app/) Integration
+- [SponsorBlock](https://sponsor.ajay.app/) Integration (segments shown on the progress bar)
 - [Autostart Support](#autostart)
-- Force Highest Video Quality
+- Always Highest Video Quality (set before playback, no mid-start switch)
+- Automatic recovery when a video hangs on a black loading screen
 - Audio-Only Mode (🟦 Blue button on remote)
 - Full Animation Support
-- Shorts Removal
-- Higher-Quality Thumbnails
+- Shorts Removal (all feeds)
+- HD Thumbnails (1280×720 instead of 320×180)
 - On-Screen Clock Overlay
 - YouTube Logo Removal
 - Remove end screens
 - Bypass account selector screen
 
 > [!NOTE]
-> Press the 🟩 **Green** button on your remote to access the configuration screen.
+> All options live in **YouTube's own Settings page**, in the
+> **YouTube AdFree** category at the top (SponsorBlock categories and
+> _Reset/About_ are at the bottom). No colour button needed – which matters on
+> the 2025+ Magic Remote, which has none. The 🟩 **Green** button still opens a
+> quick panel with the same options, handy during playback.
+
+### What this fork changes
+
+| Area                 | Change                                                                                                                                                                                                                                                    |
+| -------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Settings             | Native categories inside YouTube's Settings page (real On/Off toggles), plus a rewritten quick panel without the 1.7k-line spatial-navigation polyfill. Swedish/English UI.                                                                               |
+| Settings reset       | Settings are mirrored to IndexedDB and `localStorage.clear()`/`removeItem()` can no longer delete them. YouTube TV wipes its storage in some flows (its storage service calls `localStorage.clear()`), which is what reset the old settings.              |
+| Black loading screen | A playback watchdog detects a video stuck in BUFFERING with nothing loaded and escalates: re-show the video surface → play → seek in place → reopen the video.                                                                                            |
+| Max quality          | Writes YouTube's own `yt-player-quality` preference before playback instead of forcing a quality switch right after start (a known trigger of the webOS 25 black screen).                                                                                 |
+| Thumbnails           | Upgrades every tile type (the current UI uses `<image>`, which upstream missed) by hooking the style/preload assignment – no page-wide MutationObserver, no double loading. Falls back to `sddefault` and then the original when a video has no HD frame. |
+| SponsorBlock         | Segments are drawn as a CSS gradient on the bar: YouTube's incremental DOM recycled upstream's overlay `<div>`, so segments never showed. Skip categories apply immediately.                                                                              |
+| Shorts               | Also removes the newer `lockupViewModel` Shorts tiles.                                                                                                                                                                                                    |
+| Performance          | One `JSON.parse` hook instead of three, no deep clone on every `JSON.stringify`, modern build for webOS 22+ (userScript 272 KB → 85 KB). `pnpm run build:legacy` still targets webOS 1–21.                                                                |
 
 ---
 
@@ -49,10 +67,15 @@
 You can install the app using one of the following methods:
 
 - **[webOS Homebrew Channel](https://github.com/webosbrew/webos-homebrew-channel):**
-  App is available in the official webOS Brew repository.
+  add this fork's repository in _Settings → Add repository_:
+  `https://raw.githubusercontent.com/Zucchiniii/youtube-webos/main/homebrew-repository.json`
+  (upstream's version is in the default webOS Brew repository).
 - **[Device Manager](https://github.com/webosbrew/dev-manager-desktop):**
-  Use a pre-built `.ipk` file from the [Releases](https://github.com/webosbrew/youtube-webos/releases) page.
+  Use a pre-built `.ipk` file from the [Releases](https://github.com/Zucchiniii/youtube-webos/releases) page.
 - **Command Line (webOS CLI):** Configure the tools [below](#development-setup)
+
+The app id is the same as upstream (`youtube.leanback.v4`), so installing over
+it keeps your YouTube sign-in and settings.
 
 ---
 
