@@ -6,35 +6,21 @@
  * blink, and on webOS 25 a known trigger for the first video hanging on a
  * black buffering screen (upstream issues #379/#397).
  *
- * Now the preference is set *before* playback, the way YouTube stores a
+ * Instead the preference is stored *before* playback, the way YouTube stores a
  * manual quality pick (`yt-player-quality`), so the player starts in the best
- * format directly. Only if it still started lower (bandwidth estimate, etc.)
- * do we switch once, after playback has settled.
+ * format directly. There is deliberately no forced switch afterwards: on the
+ * TV's hardware decoder any mid-playback format switch can show as a split
+ * second of black, and YouTube's adaptive streaming steps up on its own.
  */
 
 import { configAddChangeListener, configRead } from './config';
-import { t, tf } from './i18n';
+import { t } from './i18n';
 import { showNotification } from './notifications';
-import { getPlayerManager, PlayerMode, PlayerState } from './player_api';
-import type { PlayerManager, VideoID } from './player_api';
+import { getPlayerManager } from './player_api';
 
 const QUALITY_KEY = 'yt-player-quality';
 // YouTube ignores a stored preference older than 30 days; refresh it often.
 const PREFERENCE_TTL_MS = 360 * 24 * 3600 * 1000;
-const SETTLE_MS = 2500;
-
-const LABELS: Record<string, string> = {
-  highres: '4320p',
-  hd2880: '2880p',
-  hd2160: '2160p',
-  hd1440: '1440p',
-  hd1080: '1080p',
-  hd720: '720p',
-  large: '480p',
-  medium: '360p',
-  small: '240p',
-  tiny: '144p'
-};
 
 function enabled() {
   return configRead('forceHighResVideo');
@@ -57,51 +43,6 @@ function writePreference() {
   }
 }
 
-function bestPlayable(manager: PlayerManager) {
-  const data = manager.player.getAvailableQualityData();
-  return data.find((d) => d.isPlayable && !d.paygatedQualityDetails) ?? null;
-}
-
-const corrected = new Set<VideoID>();
-
-function scheduleCorrection(manager: PlayerManager) {
-  const id = manager.currentVideoID;
-  if (!id || corrected.has(id)) return;
-  corrected.add(id);
-  if (corrected.size > 200) corrected.clear();
-
-  setTimeout(() => {
-    try {
-      if (!enabled()) return;
-      if (manager.currentVideoID !== id) return;
-      if (manager.playerMode !== PlayerMode.NORMAL) return;
-      // Only switch while healthy playback is underway.
-      if (manager.player.getPlayerState() !== PlayerState.PLAYING) return;
-
-      const best = bestPlayable(manager);
-      if (!best) return;
-      const current = manager.player.getPlaybackQuality();
-      if (current === best.quality) return;
-
-      console.info('[video-quality]', current, '->', best.quality);
-      manager.player.setPlaybackQualityRange(
-        best.quality,
-        best.quality,
-        best.formatId
-      );
-      showNotification(
-        tf(
-          { en: 'Quality raised to {q}', sv: 'Kvaliteten höjd till {q}' },
-          { q: best.qualityLabel || LABELS[best.quality] || best.quality }
-        ),
-        2500
-      );
-    } catch (err) {
-      console.warn('[video-quality] correction failed:', err);
-    }
-  }, SETTLE_MS);
-}
-
 if (enabled()) writePreference();
 
 configAddChangeListener('forceHighResVideo', (value) => {
@@ -117,13 +58,9 @@ configAddChangeListener('forceHighResVideo', (value) => {
   }
 });
 
+// Re-assert after every video: a manual pick in the player overwrites it.
 void getPlayerManager().then((manager) => {
   manager.addEventListener('newVideo', () => {
     if (enabled()) writePreference();
-  });
-  manager.addEventListener('playbackStart', () => {
-    if (enabled() && manager.playerMode === PlayerMode.NORMAL) {
-      scheduleCorrection(manager);
-    }
   });
 });

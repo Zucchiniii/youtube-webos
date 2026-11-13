@@ -4,6 +4,26 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [1.2.0] - 2026/11/13
+
+### Added
+
+- OK on a playing preview continues it in full screen instead of reloading, sound uninterrupted (clears YouTube's `blockAdoption`); a thumbnail card grows from the preview at full frame rate and dissolves into the playing video, because the TV's video plane can only move in ~3 fps steps
+- "Remember profile" setting (was "Skip Who's watching"): now snoozes YouTube's start-up screens at every start, so the app opens straight into the last profile
+
+### Changed
+
+- Smaller notifications (SponsorBlock skips etc.) in the bottom-right corner: about a third of the area, closer to the corner
+
+### Fixed
+
+- Pressing OK to pause launched a flying thumbnail over the video (the transition now starts only from video tiles)
+- Black flash at the switch from preview to video: YouTube hides the player for ~0.2 s there; it is kept visible
+- Black screen after OK on a playing preview (measured on an LG C5: 0.5 s stopped tile + 0.25 s full black, now none)
+- Black frames right after pressing a video: the transition is set up in the OK key handler, before YouTube swaps the page, over a dimmed copy of the thumbnail; the motion starts on the next frame with a gentler curve (it used to jump, as YouTube blocks the main thread for ~200 ms after OK)
+- Possible black flash when the poster faded before the TV showed the first video frames: it now waits until playback has run for 0.5 s and fades over 0.6 s; without a tile it appears at once instead of fading in over black
+- Removed the forced quality switch after start ("Always highest quality" now only sets the preference before playback), which could show as a black flash on the hardware decoder
+
 ## [1.1.0] - 2026/11/13
 
 ### Added

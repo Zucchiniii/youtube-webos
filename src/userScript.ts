@@ -8,6 +8,7 @@ import './hooks/json-parse';
 import './hooks/json-stringify';
 import './hooks';
 import './thumbnail-quality';
+import './player-animation';
 import './app_api/index';
 
 import { handleLaunch } from './utils';
@@ -24,6 +25,7 @@ document.addEventListener(
 import './adblock';
 import './shorts';
 import './remove-endscreen';
+import './preview-adoption';
 import './settings/native';
 import './ui';
 import './font-fix.css';
@@ -34,6 +36,7 @@ import './watch.js';
 import './video-quality';
 import './playback-watchdog';
 import './launch-transition';
+import './preview-zoom';
 import './lang-settings-fix';
 import './block-webos-cast';
 import './auto-account-select';

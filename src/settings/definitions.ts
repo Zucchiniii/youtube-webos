@@ -104,13 +104,10 @@ export const settingsSections: SettingsSection[] = [
       {
         kind: 'toggle',
         key: 'autoAccountSelect',
-        title: {
-          en: 'Skip "Who\'s watching?"',
-          sv: 'Hoppa över "Vem tittar?"'
-        },
+        title: { en: 'Remember profile', sv: 'Kom ihåg profilen' },
         summary: {
-          en: 'Continues with the last account at start-up.',
-          sv: 'Fortsätter med senaste kontot när appen startar.'
+          en: 'Skips "Who\'s watching?" when the app starts and continues with the profile you used last.',
+          sv: 'Hoppar över "Vem tittar?" när appen startar och fortsätter med profilen du använde senast.'
         },
         icon: 'account',
         color: '#00897b'

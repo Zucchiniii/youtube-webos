@@ -1,0 +1,58 @@
+/* Preview → full screen (see preview-zoom.ts). */
+
+/* Hide YouTube's UI (everything except the player): black around the video.
+   `visibility` rather than an opacity fade, so there is nothing extra to
+   blend while the GPU and the video pipeline are busy. */
+html.ytaf-zoom ytlr-app > :not(ytlr-player-container),
+html.ytaf-zoom .webOs-watch {
+  visibility: hidden !important;
+}
+
+/* The app's own dark-grey backdrop becomes black like the video hole. */
+html.ytaf-zoom .ytaf-zoom-bg {
+  background-color: #000 !important;
+}
+
+/* The video jumps to full screen at once (one hardware plane move, hidden
+   under the card) and stays visible while YouTube switches pages: it hides
+   the player for ~0.2 s there, and the TV blanks the video meanwhile. */
+html.ytaf-zoom ytlr-player {
+  transition: none !important;
+  display: block !important;
+}
+
+/* Black layer over the (already full-screen) video, holding the card. */
+.ytaf-zoom-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 1150;
+  display: block;
+  background: #000;
+  pointer-events: none;
+}
+
+/* The thumbnail card that does the growing, at full frame rate. */
+.ytaf-zoom-card {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  background-color: #000;
+  background-position: center;
+  background-size: cover;
+  transform-origin: 0 0;
+  will-change: transform;
+}
+
+/* Fading back in once the video fills the screen. */
+html.ytaf-zoom-out ytlr-app > :not(ytlr-player-container),
+html.ytaf-zoom-out .webOs-watch {
+  animation: ytaf-zoom-back 240ms ease-out;
+}
+
+@keyframes ytaf-zoom-back {
+  from {
+    opacity: 0;
+  }
+}

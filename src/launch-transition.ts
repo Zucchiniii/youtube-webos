@@ -4,16 +4,25 @@
  * YouTube TV shows a plain black screen from pressing a video until its first
  * frame (1–3 s on a TV, longer on a slow start). Instead:
  *
- *  1. The selected tile's thumbnail flies from the tile to full screen
- *     (~0.4 s, transform-only so it stays smooth on TV GPUs).
- *  2. It stays as a poster – HD thumbnail with a slow zoom, the title and a
- *     loading bar – until the video is really playing.
- *  3. It cross-fades into the video once playback time is advancing.
+ *  1. The moment OK is pressed on a tile, the screen dims to the video's
+ *     thumbnail and the tile flies to full screen (~0.4 s, transform-only so
+ *     it stays smooth on TV GPUs). This starts in the key handler itself –
+ *     before YouTube swaps the page – so there is never a black frame.
+ *  2. It stays as a poster – HD thumbnail with a slow zoom, title, channel and
+ *     a loading bar – until the video is really playing.
+ *  3. It cross-fades into the video once playback has been running for a
+ *     moment (the TV's video plane shows its first frames a little after the
+ *     clock starts, so fading earlier would reveal black).
+ *
+ * If a preview of that video is already playing in the tile, none of this
+ * happens: YouTube grafts the preview into the full-screen player and grows it
+ * (its own player resize animation, which we switch on in `utils.ts`), so the
+ * preview simply becomes the video.
  *
  * Layering: the flying tile sits on top of everything for its short flight.
  * The poster is placed inside YouTube's player container (above the <video>,
- * below all of YouTube's own UI), so the player controls, sign-in and "are you
- * a bot" prompts, and dialogs always stay visible above it.
+ * below all of YouTube's own UI), so player controls, sign-in and "are you a
+ * bot" prompts, and dialogs always stay visible above it.
  *
  * Autoplay of the next video, deep links and casts get the poster with a
  * fade-in, since there is no tile to fly from.
@@ -23,13 +32,16 @@ import { getPlayerManager, PlayerState } from './player_api';
 import type { PlayerManager } from './player_api';
 import './launch-transition.css';
 
-const FLIGHT_MS = 420;
-const FADE_OUT_MS = 450;
+const FLIGHT_MS = 460;
+const FADE_OUT_MS = 600;
+/** Playback must have run this long before the poster fades. */
+const SETTLE_PLAYBACK_S = 0.5;
 /** Give up waiting for playback (the watchdog handles real hangs). */
 const MAX_POSTER_MS = 30000;
-/** A selection older than this is not the one that opened the video. */
-const SELECTION_TTL_MS = 2500;
-const EASE_OUT = 'cubic-bezier(0.2, 0.75, 0.25, 1)';
+/** No watch page this soon after OK: the tile was not a video. */
+const NAVIGATION_TIMEOUT_MS = 900;
+/** Material standard easing: gentle start, so a late first frame shows no jump. */
+const EASE = 'cubic-bezier(0.4, 0, 0.2, 1)';
 
 interface Selection {
   videoId: string;
@@ -37,11 +49,54 @@ interface Selection {
   rect: DOMRect;
   title: string;
   subtitle: string;
-  at: number;
 }
 
-let selection: Selection | null = null;
+interface Flight {
+  sel: Selection;
+  layer: HTMLElement;
+  landed: boolean;
+  onLanded: (() => void) | null;
+  cancelTimer: number;
+}
+
 let manager: PlayerManager | null = null;
+let flight: Flight | null = null;
+
+/* ---------------- Helpers ---------------- */
+
+function el<K extends keyof HTMLElementTagNameMap>(
+  tag: K,
+  className: string,
+  parent?: HTMLElement
+) {
+  const node = document.createElement(tag);
+  node.className = className;
+  parent?.appendChild(node);
+  return node;
+}
+
+function isWatchHash() {
+  return location.hash.startsWith('#/watch');
+}
+
+function currentVideoIdFromHash(): string | null {
+  // A regex instead of URLSearchParams, which would pull in a core-js
+  // ponyfill for webOS 22's Chromium.
+  return /[?&]v=([\w-]{11})/.exec(location.hash)?.[1] ?? null;
+}
+
+/** A preview (or the video itself) is already playing for this id. */
+function alreadyPlaying(videoId: string) {
+  const player = manager?.player;
+  const video = document.querySelector('video');
+  return (
+    !!player &&
+    !!video &&
+    manager?.currentVideoID === videoId &&
+    player.getPlayerState() === PlayerState.PLAYING &&
+    !video.paused
+  );
+}
 
 /* ---------------- Capturing the selected tile ---------------- */
 
@@ -56,44 +111,133 @@ function tileText(tile: HTMLElement) {
   return { title: lines[0] ?? '', subtitle: lines[1] ?? '' };
 }
 
-function captureSelection(start: Element | null) {
-  for (
-    let el: Element | null = start, depth = 0;
-    el && depth < 6;
-    el = el.parentElement, depth++
-  ) {
-    const thumb = el.querySelector<HTMLElement>('[style*="ytimg.com/vi"]');
-    if (!thumb) continue;
-    const rect = thumb.getBoundingClientRect();
-    if (rect.width < 120 || rect.height < 60) continue;
+/** Elements YouTube TV uses for video tiles (new lockup and classic tile). */
+const TILE_SELECTOR = 'yt-lockup-view-model, ytlr-tile-renderer';
 
-    const url = /url\("?([^")]+)"?\)/.exec(thumb.style.backgroundImage)?.[1];
-    const id = url && /\/vi(?:_webp)?\/([\w-]{11})\//.exec(url)?.[1];
-    if (!url || !id) return;
+function captureSelection(start: Element | null): Selection | null {
+  // Only a focused/clicked video tile counts. Walking up to any ancestor with
+  // a thumbnail also matched the player's controls on the watch page, so
+  // pressing OK to pause launched a flying thumbnail over the video.
+  const tile = start?.closest<HTMLElement>(TILE_SELECTOR);
+  if (!tile) return null;
 
-    selection = {
-      videoId: id,
-      thumbUrl: url,
-      rect,
-      ...tileText(el as HTMLElement),
-      at: Date.now()
-    };
+  const thumb = tile.querySelector<HTMLElement>('[style*="ytimg.com/vi"]');
+  if (!thumb) return null;
+  const rect = thumb.getBoundingClientRect();
+  if (rect.width < 120 || rect.height < 60) return null;
+  // Portrait tiles are Shorts; they open the Shorts player, not a video.
+  if (rect.height > rect.width) return null;
+
+  const url = /url\("?([^")]+)"?\)/.exec(thumb.style.backgroundImage)?.[1];
+  const id = url && /\/vi(?:_webp)?\/([\w-]{11})\//.exec(url)?.[1];
+  if (!url || !id) return null;
+
+  return { videoId: id, thumbUrl: url, rect, ...tileText(tile) };
+}
+
+/* ---------------- Flight ---------------- */
+
+function removeFlight(fade: boolean) {
+  const f = flight;
+  if (!f) return;
+  flight = null;
+  clearTimeout(f.cancelTimer);
+  if (!fade) {
+    f.layer.remove();
     return;
   }
+  const anim = f.layer.animate([{ opacity: 1 }, { opacity: 0 }], {
+    duration: 160,
+    easing: 'ease-out',
+    fill: 'forwards'
+  });
+  anim.onfinish = () => f.layer.remove();
+}
+
+/**
+ * Set up on OK, animate from the next frame.
+ *
+ * YouTube's own OK handling blocks the main thread for ~200 ms (measured on
+ * an LG C5). Animations created in the key handler had their clock running
+ * during that block, so the first visible frame was already well into the
+ * flight – a jump. Creating the layer now (so it is in the very next frame,
+ * covering the page swap) but starting the motion in that frame avoids it.
+ */
+function startFlight(sel: Selection) {
+  removeFlight(false);
+
+  const vw = window.innerWidth;
+  const vh = window.innerHeight;
+  const { rect } = sel;
+  const from = `translate(${rect.left}px, ${rect.top}px) scale(${
+    rect.width / vw
+  }, ${rect.height / vh})`;
+
+  const layer = document.createElement('ytaf-launch-flight');
+  layer.className = 'ytaf-launch-flight';
+  // One pre-darkened copy of the thumbnail behind the card (gradient over
+  // the image in a single layer): whatever YouTube shows underneath while it
+  // swaps pages, the screen never goes black.
+  const backdrop = el('div', 'ytaf-launch-backdrop', layer);
+  backdrop.style.backgroundImage = `linear-gradient(rgba(0,0,0,.62),rgba(0,0,0,.62)),url("${sel.thumbUrl}")`;
+  backdrop.style.opacity = '0';
+  const card = el('div', 'ytaf-launch-card', layer);
+  card.style.backgroundImage = `url("${sel.thumbUrl}")`;
+  card.style.transform = from;
+  document.body.appendChild(layer);
+
+  const f: Flight = {
+    sel,
+    layer,
+    landed: false,
+    onLanded: null,
+    // Not a video after all (channel, playlist page…): fade away.
+    cancelTimer: window.setTimeout(() => {
+      if (!isWatchHash() || currentVideoIdFromHash() !== sel.videoId) {
+        removeFlight(true);
+      }
+    }, NAVIGATION_TIMEOUT_MS)
+  };
+  flight = f;
+
+  requestAnimationFrame(() => {
+    if (flight !== f) return;
+    backdrop.style.opacity = '';
+    backdrop.animate([{ opacity: 0 }, { opacity: 1 }], {
+      duration: 180,
+      easing: 'linear'
+    });
+    const move = card.animate(
+      [{ transform: from }, { transform: 'translate(0px, 0px) scale(1, 1)' }],
+      { duration: FLIGHT_MS, easing: EASE, fill: 'forwards' }
+    );
+    move.onfinish = () => {
+      f.landed = true;
+      f.onLanded?.();
+    };
+  });
+}
+
+function onSelect(target: Element | null) {
+  const sel = captureSelection(target);
+  if (!sel) return;
+  // A running preview grows into the video by itself (YouTube's grafting).
+  if (alreadyPlaying(sel.videoId)) return;
+  startFlight(sel);
 }
 
 window.addEventListener(
   'keydown',
   (evt) => {
-    if (evt.keyCode === 13 && evt.isTrusted) {
-      captureSelection(document.activeElement);
+    if (evt.keyCode === 13 && evt.isTrusted && !evt.repeat) {
+      onSelect(document.activeElement);
     }
   },
   true
 );
 window.addEventListener(
   'click',
-  (evt) => captureSelection(evt.target as Element),
+  (evt) => onSelect(evt.target as Element),
   true
 );
 
@@ -109,17 +253,6 @@ interface Poster {
 }
 
 let poster: Poster | null = null;
-
-function el<K extends keyof HTMLElementTagNameMap>(
-  tag: K,
-  className: string,
-  parent?: HTMLElement
-) {
-  const node = document.createElement(tag);
-  node.className = className;
-  parent?.appendChild(node);
-  return node;
-}
 
 function buildPoster(thumbUrl: string, title: string, subtitle: string) {
   // A custom tag: YouTube's incremental DOM recycles foreign <div>s.
@@ -175,13 +308,13 @@ function closePoster(immediate = false) {
   }
   const anim = p.root.animate([{ opacity: 1 }, { opacity: 0 }], {
     duration: FADE_OUT_MS,
-    easing: 'ease-out',
+    easing: 'ease-in-out',
     fill: 'forwards'
   });
   anim.onfinish = () => p.root.remove();
 }
 
-/** Close once playback time is really advancing. */
+/** Close once playback has been running for a moment. */
 function checkPoster() {
   const p = poster;
   if (!p) return;
@@ -203,54 +336,20 @@ function checkPoster() {
   if (!video || !player) return;
   if (manager?.currentVideoID !== p.videoId) return;
 
-  if (player.getPlayerState() !== PlayerState.PLAYING) return;
+  if (player.getPlayerState() !== PlayerState.PLAYING || video.paused) return;
   if (p.startTime === null) {
     p.startTime = video.currentTime;
     return;
   }
-  if (video.currentTime - p.startTime > 0.15) closePoster();
-}
-
-function flyFromTile(thumbUrl: string, rect: DOMRect) {
-  const vw = window.innerWidth;
-  const vh = window.innerHeight;
-
-  const layer = document.createElement('ytaf-launch-flight');
-  layer.className = 'ytaf-launch-flight';
-  const backdrop = el('div', 'ytaf-launch-backdrop', layer);
-  const card = el('div', 'ytaf-launch-card', layer);
-  card.style.backgroundImage = `url("${thumbUrl}")`;
-  document.body.appendChild(layer);
-
-  const from = `translate(${rect.left}px, ${rect.top}px) scale(${
-    rect.width / vw
-  }, ${rect.height / vh})`;
-
-  backdrop.animate([{ opacity: 0 }, { opacity: 1 }], {
-    duration: FLIGHT_MS,
-    easing: 'ease-out',
-    fill: 'forwards'
-  });
-  const flight = card.animate(
-    [{ transform: from }, { transform: 'translate(0px, 0px) scale(1, 1)' }],
-    { duration: FLIGHT_MS, easing: EASE_OUT, fill: 'forwards' }
-  );
-  // The poster underneath is identical by now, so removing is seamless.
-  flight.onfinish = () => layer.remove();
-  setTimeout(() => layer.remove(), FLIGHT_MS + 500);
+  if (video.currentTime - p.startTime >= SETTLE_PLAYBACK_S) closePoster();
 }
 
 function showPoster(videoId: string) {
   if (poster?.videoId === videoId) return;
   closePoster(true);
 
-  const sel =
-    selection &&
-    selection.videoId === videoId &&
-    Date.now() - selection.at < SELECTION_TTL_MS
-      ? selection
-      : null;
-  selection = null;
+  const f = flight && flight.sel.videoId === videoId ? flight : null;
+  const sel = f?.sel;
 
   // Without a tile (autoplay, deep link, cast): hqdefault always exists;
   // swap to the HD frame if the video has one.
@@ -269,32 +368,31 @@ function showPoster(videoId: string) {
   };
   mountPoster(poster);
 
-  if (sel) {
-    flyFromTile(thumbUrl, sel.rect);
-    root.animate([{ opacity: 0 }, { opacity: 1 }], {
-      duration: 1,
-      delay: FLIGHT_MS - 40,
-      fill: 'backwards'
-    });
+  if (f) {
+    // Hidden until the card lands; then swap in the (identical) poster and
+    // drop the flight layer a frame later.
+    clearTimeout(f.cancelTimer);
+    const reveal = () => {
+      root.style.opacity = '';
+      root.classList.add('ytaf-launch-shown');
+      requestAnimationFrame(() => {
+        if (flight === f) removeFlight(false);
+      });
+    };
+    if (f.landed) reveal();
+    else {
+      root.style.opacity = '0';
+      f.onLanded = reveal;
+    }
   } else {
-    root.animate([{ opacity: 0 }, { opacity: 1 }], {
-      duration: 280,
-      easing: 'ease-out'
-    });
+    // No fade-in from transparent: YouTube has usually cleared the page by
+    // now, and a fade would show the black underneath (measured on the TV).
+    root.classList.add('ytaf-launch-shown');
+    removeFlight(true);
   }
 }
 
 /* ---------------- Navigation ---------------- */
-
-function isWatchHash() {
-  return location.hash.startsWith('#/watch');
-}
-
-function currentVideoIdFromHash(): string | null {
-  // A regex instead of URLSearchParams, which would pull in a core-js
-  // ponyfill for webOS 22's Chromium.
-  return /[?&]v=([\w-]{11})/.exec(location.hash)?.[1] ?? null;
-}
 
 let lastVideoId: string | null = null;
 
@@ -308,14 +406,9 @@ function onNavigate() {
   if (!id || id === lastVideoId) return;
   lastVideoId = id;
 
-  // Already playing this video (e.g. the hero preview was running): no poster.
-  const video = document.querySelector('video');
-  if (
-    manager?.currentVideoID === id &&
-    manager.player.getPlayerState() === PlayerState.PLAYING &&
-    video &&
-    !video.paused
-  ) {
+  // A preview grafted into the player keeps playing: nothing to cover.
+  if (alreadyPlaying(id)) {
+    removeFlight(false);
     return;
   }
   showPoster(id);

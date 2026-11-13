@@ -9,7 +9,8 @@
  * YouTube's own parsing.
  */
 
-export type JsonFilter = (data: Record<string, unknown>) => void;
+/** `text` is the raw JSON, handy for a cheap `indexOf` pre-check. */
+export type JsonFilter = (data: Record<string, unknown>, text: string) => void;
 
 const filters: { name: string; fn: JsonFilter }[] = [];
 
@@ -35,7 +36,7 @@ function parse(
     const data = result as Record<string, unknown>;
     for (const { name, fn } of filters) {
       try {
-        fn(data);
+        fn(data, text);
       } catch (err) {
         console.warn(`[json-parse] filter "${name}" failed:`, err);
       }

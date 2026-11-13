@@ -20,17 +20,6 @@
   inset: 0;
   background-position: center;
   background-size: cover;
-  transform-origin: 60% 45%;
-  animation: ytaf-launch-zoom 14s linear forwards;
-}
-
-@keyframes ytaf-launch-zoom {
-  from {
-    transform: scale(1);
-  }
-  to {
-    transform: scale(1.07);
-  }
 }
 
 .ytaf-launch-scrim {
@@ -44,8 +33,11 @@
       rgba(0, 0, 0, 0) 55%
     ),
     linear-gradient(to right, rgba(0, 0, 0, 0.45) 0%, rgba(0, 0, 0, 0) 45%);
-  /* Fades in as the flying tile lands. */
-  animation: ytaf-launch-fade 0.35s 0.38s ease-out backwards;
+}
+
+/* Scrim and title come in once the poster is on screen. */
+.ytaf-launch-shown .ytaf-launch-scrim {
+  animation: ytaf-launch-fade 0.3s ease-out backwards;
 }
 
 @keyframes ytaf-launch-fade {
@@ -62,7 +54,10 @@
   color: #fff;
   font-family: Roboto, Arial, Helvetica, sans-serif;
   text-shadow: 0 0.1rem 0.6rem rgba(0, 0, 0, 0.6);
-  animation: ytaf-launch-rise 0.5s 0.25s ease-out backwards;
+}
+
+.ytaf-launch-shown .ytaf-launch-meta {
+  animation: ytaf-launch-rise 0.4s 0.05s ease-out backwards;
 }
 
 @keyframes ytaf-launch-rise {
@@ -127,10 +122,15 @@
   pointer-events: none;
 }
 
+/* Full-screen, pre-darkened copy of the thumbnail (gradient + image in one
+   layer): the page behind can turn black during YouTube's page swap without
+   it showing. */
 .ytaf-launch-backdrop {
   position: absolute;
   inset: 0;
-  background: #000;
+  background-color: #000;
+  background-position: center;
+  background-size: cover;
 }
 
 .ytaf-launch-card {
