@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [1.2.2] - 2026/11/13
+
+### Changed
+
+- App icon: the YouTube Plus icon from the macOS app – a red screen with a play button and a plus badge on dark grey
+
 ## [1.2.1] - 2026/11/13
 
 ### Changed
