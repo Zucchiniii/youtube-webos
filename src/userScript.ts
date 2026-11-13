@@ -33,6 +33,7 @@ import './screensaver-fix';
 import './watch.js';
 import './video-quality';
 import './playback-watchdog';
+import './launch-transition';
 import './lang-settings-fix';
 import './block-webos-cast';
 import './auto-account-select';

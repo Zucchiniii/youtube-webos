@@ -28,7 +28,6 @@ const IDB_STORE = 'kv';
 
 export const configDefaults = {
   enableAdBlock: true,
-  upgradeThumbnails: true,
   removeShorts: false,
   enableSponsorBlock: true,
   enableSponsorBlockSponsor: true,
@@ -41,7 +40,6 @@ export const configDefaults = {
   hideLogo: false,
   showWatch: false,
   forceHighResVideo: false,
-  playbackWatchdog: true,
   removeEndscreen: false,
   autoAccountSelect: false
 } satisfies Record<string, boolean | number | string>;

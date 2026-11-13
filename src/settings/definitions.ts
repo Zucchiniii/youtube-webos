@@ -59,17 +59,6 @@ export const settingsSections: SettingsSection[] = [
       },
       {
         kind: 'toggle',
-        key: 'upgradeThumbnails',
-        title: { en: 'HD thumbnails', sv: 'HD-miniatyrer' },
-        summary: {
-          en: 'Loads 1280×720 thumbnails instead of the blurry 320×180 ones YouTube sends to TVs.',
-          sv: 'Laddar miniatyrer i 1280×720 i stället för de suddiga 320×180 som YouTube skickar till TV-apparater.'
-        },
-        icon: 'image',
-        color: '#1a73e8'
-      },
-      {
-        kind: 'toggle',
         key: 'forceHighResVideo',
         title: { en: 'Always highest quality', sv: 'Alltid högsta kvalitet' },
         summary: {
@@ -78,17 +67,6 @@ export const settingsSections: SettingsSection[] = [
         },
         icon: 'quality',
         color: '#7b4ce0'
-      },
-      {
-        kind: 'toggle',
-        key: 'playbackWatchdog',
-        title: { en: 'Fix stuck videos', sv: 'Laga videor som fastnar' },
-        summary: {
-          en: 'If a video hangs on a black loading screen, playback is restarted automatically.',
-          sv: 'Om en video fastnar på en svart laddningsskärm startas uppspelningen om automatiskt.'
-        },
-        icon: 'pulse',
-        color: '#e8710a'
       },
       {
         kind: 'toggle',

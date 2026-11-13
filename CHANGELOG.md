@@ -4,6 +4,17 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [1.1.0] - 2026/11/13
+
+### Added
+
+- Video launch transition: the selected tile grows to full screen and shows a poster (HD thumbnail, title, channel, loading bar) until the video plays, instead of a black screen. Also used for autoplay, casts and deep links (fade-in).
+
+### Changed
+
+- Fixes are always on: "Fix stuck videos" and "HD thumbnails" no longer have a switch
+- No CSS source maps in the bundle (they were base64-encoded on every start); userScript 82 KB
+
 ## [1.0.0] - 2026/11/13
 
 ### Added

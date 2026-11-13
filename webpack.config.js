@@ -87,7 +87,9 @@ const makeConfig = (_env, argv) => [
             { loader: 'style-loader' },
             {
               loader: 'css-loader',
-              options: { esModule: false, importLoaders: 1 }
+              // No CSS source maps: they double each stylesheet's size and are
+              // base64-encoded at runtime on every app start.
+              options: { esModule: false, importLoaders: 1, sourceMap: false }
             },
             'postcss-loader'
           ]

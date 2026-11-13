@@ -1,0 +1,146 @@
+/* Poster: inside YouTube's player container, above the video, below UI. */
+.ytaf-launch {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: block;
+  overflow: hidden;
+  background: #000;
+  pointer-events: none;
+}
+
+/* No player container yet (first load): sit low in the page instead. */
+.ytaf-launch.ytaf-launch-fallback {
+  position: fixed;
+  z-index: 1;
+}
+
+.ytaf-launch-image {
+  position: absolute;
+  inset: 0;
+  background-position: center;
+  background-size: cover;
+  transform-origin: 60% 45%;
+  animation: ytaf-launch-zoom 14s linear forwards;
+}
+
+@keyframes ytaf-launch-zoom {
+  from {
+    transform: scale(1);
+  }
+  to {
+    transform: scale(1.07);
+  }
+}
+
+.ytaf-launch-scrim {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(
+      to top,
+      rgba(0, 0, 0, 0.88) 0%,
+      rgba(0, 0, 0, 0.45) 28%,
+      rgba(0, 0, 0, 0) 55%
+    ),
+    linear-gradient(to right, rgba(0, 0, 0, 0.45) 0%, rgba(0, 0, 0, 0) 45%);
+  /* Fades in as the flying tile lands. */
+  animation: ytaf-launch-fade 0.35s 0.38s ease-out backwards;
+}
+
+@keyframes ytaf-launch-fade {
+  from {
+    opacity: 0;
+  }
+}
+
+.ytaf-launch-meta {
+  position: absolute;
+  left: 6rem;
+  right: 6rem;
+  bottom: 5.25rem;
+  color: #fff;
+  font-family: Roboto, Arial, Helvetica, sans-serif;
+  text-shadow: 0 0.1rem 0.6rem rgba(0, 0, 0, 0.6);
+  animation: ytaf-launch-rise 0.5s 0.25s ease-out backwards;
+}
+
+@keyframes ytaf-launch-rise {
+  from {
+    opacity: 0;
+    transform: translateY(1rem);
+  }
+}
+
+.ytaf-launch-title {
+  max-width: 62rem;
+  font-size: 2.6rem;
+  font-weight: 700;
+  line-height: 1.2;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.ytaf-launch-subtitle {
+  margin-top: 0.5rem;
+  font-size: 1.4rem;
+  color: rgba(255, 255, 255, 0.78);
+}
+
+/* Indeterminate loading bar along the bottom edge. */
+.ytaf-launch-loading {
+  position: absolute;
+  left: 6rem;
+  right: 6rem;
+  bottom: 3.25rem;
+  height: 0.25rem;
+  border-radius: 0.25rem;
+  background: rgba(255, 255, 255, 0.18);
+  overflow: hidden;
+}
+
+.ytaf-launch-loading-fill {
+  width: 30%;
+  height: 100%;
+  border-radius: inherit;
+  background: #ff0033;
+  animation: ytaf-launch-sweep 1.15s cubic-bezier(0.45, 0, 0.55, 1) infinite;
+}
+
+@keyframes ytaf-launch-sweep {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(340%);
+  }
+}
+
+/* Flying tile: on top of everything for ~0.4 s. */
+.ytaf-launch-flight {
+  position: fixed;
+  inset: 0;
+  z-index: 1150;
+  display: block;
+  pointer-events: none;
+}
+
+.ytaf-launch-backdrop {
+  position: absolute;
+  inset: 0;
+  background: #000;
+}
+
+.ytaf-launch-card {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  background-position: center;
+  background-size: cover;
+  transform-origin: 0 0;
+  will-change: transform;
+}

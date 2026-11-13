@@ -17,7 +17,6 @@
  * arriving (ordinary buffering) never counts as stuck.
  */
 
-import { configRead } from './config';
 import { t } from './i18n';
 import { showNotification } from './notifications';
 import { getPlayerManager, PlayerMode, PlayerState } from './player_api';
@@ -107,7 +106,7 @@ function remedy(manager: PlayerManager, video: HTMLVideoElement, w: Watch) {
 }
 
 function tick(manager: PlayerManager) {
-  if (!configRead('playbackWatchdog') || !isWatchPage()) {
+  if (!isWatchPage()) {
     stop();
     return;
   }
@@ -202,7 +201,7 @@ function stop() {
 
 void getPlayerManager().then((manager) => {
   const maybeStart = () => {
-    if (configRead('playbackWatchdog') && isWatchPage()) start(manager);
+    if (isWatchPage()) start(manager);
   };
   manager.addEventListener('newVideo', maybeStart);
   manager.addEventListener('stateChange', maybeStart);

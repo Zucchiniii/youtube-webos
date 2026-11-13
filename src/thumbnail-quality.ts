@@ -21,8 +21,6 @@
  * the original.
  */
 
-import { configAddChangeListener, configRead } from './config';
-
 const Quality = { Pending: 0, HQ720: 1, SD: 2, None: 3 } as const;
 type Quality = (typeof Quality)[keyof typeof Quality];
 
@@ -45,8 +43,6 @@ const PROBE_TIMEOUT_MS = 15000;
 const quality = new Map<string, Quality>();
 /** Styles showing an optimistic URL while its probe runs: style -> original */
 const waiting = new Map<string, Map<CSSStyleDeclaration, string>>();
-
-let enabled = configRead('upgradeThumbnails');
 
 function candidates(id: string, suffix: string): [string, string] {
   return [
@@ -254,11 +250,7 @@ const nativeSrcSet = srcDesc.set!;
 Object.defineProperty(HTMLImageElement.prototype, 'src', {
   ...srcDesc,
   set(this: HTMLImageElement, value: string) {
-    if (
-      enabled &&
-      typeof value === 'string' &&
-      value.includes('ytimg.com/vi')
-    ) {
+    if (typeof value === 'string' && value.includes('ytimg.com/vi')) {
       value = upgradeSrc(value);
     }
     nativeSrcSet.call(this, value);
@@ -278,11 +270,7 @@ const nativeBgSet: (this: CSSStyleDeclaration, v: string) => void =
 Object.defineProperty(proto, 'cssText', {
   ...cssTextDesc,
   set(this: CSSStyleDeclaration, value: string) {
-    if (
-      enabled &&
-      typeof value === 'string' &&
-      value.includes('ytimg.com/vi')
-    ) {
+    if (typeof value === 'string' && value.includes('ytimg.com/vi')) {
       value = upgradeCss(this, value);
     }
     nativeCssTextSet.call(this, value);
@@ -293,31 +281,10 @@ if (bgDesc?.set) {
   Object.defineProperty(proto, 'backgroundImage', {
     ...bgDesc,
     set(this: CSSStyleDeclaration, value: string) {
-      if (
-        enabled &&
-        typeof value === 'string' &&
-        value.includes('ytimg.com/vi')
-      ) {
+      if (typeof value === 'string' && value.includes('ytimg.com/vi')) {
         value = upgradeCss(this, value);
       }
       nativeBgSet.call(this, value);
     }
   });
 }
-
-/** Upgrade thumbnails that were already on screen when enabled. */
-function upgradeExisting() {
-  const nodes = document.querySelectorAll<HTMLElement>(
-    '[style*="ytimg.com/vi"]'
-  );
-  for (const node of nodes) {
-    const bg = node.style.backgroundImage;
-    const next = upgradeCss(node.style, bg);
-    if (next !== bg) nativeBgSet.call(node.style, next);
-  }
-}
-
-configAddChangeListener('upgradeThumbnails', (value) => {
-  enabled = value;
-  if (value) upgradeExisting();
-});

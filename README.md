@@ -24,11 +24,13 @@
 - [SponsorBlock](https://sponsor.ajay.app/) Integration (segments shown on the progress bar)
 - [Autostart Support](#autostart)
 - Always Highest Video Quality (set before playback, no mid-start switch)
-- Automatic recovery when a video hangs on a black loading screen
+- Smooth video launch: the tile grows to full screen and shows a poster with
+  title until the video plays, instead of a black screen
+- Automatic recovery when a video hangs on a black loading screen (always on)
 - Audio-Only Mode (🟦 Blue button on remote)
 - Full Animation Support
 - Shorts Removal (all feeds)
-- HD Thumbnails (1280×720 instead of 320×180)
+- HD Thumbnails (1280×720 instead of 320×180, always on)
 - On-Screen Clock Overlay
 - YouTube Logo Removal
 - Remove end screens
@@ -43,16 +45,18 @@
 
 ### What this fork changes
 
-| Area                 | Change                                                                                                                                                                                                                                                    |
-| -------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Settings             | Native categories inside YouTube's Settings page (real On/Off toggles), plus a rewritten quick panel without the 1.7k-line spatial-navigation polyfill. Swedish/English UI.                                                                               |
-| Settings reset       | Settings are mirrored to IndexedDB and `localStorage.clear()`/`removeItem()` can no longer delete them. YouTube TV wipes its storage in some flows (its storage service calls `localStorage.clear()`), which is what reset the old settings.              |
-| Black loading screen | A playback watchdog detects a video stuck in BUFFERING with nothing loaded and escalates: re-show the video surface → play → seek in place → reopen the video.                                                                                            |
-| Max quality          | Writes YouTube's own `yt-player-quality` preference before playback instead of forcing a quality switch right after start (a known trigger of the webOS 25 black screen).                                                                                 |
-| Thumbnails           | Upgrades every tile type (the current UI uses `<image>`, which upstream missed) by hooking the style/preload assignment – no page-wide MutationObserver, no double loading. Falls back to `sddefault` and then the original when a video has no HD frame. |
-| SponsorBlock         | Segments are drawn as a CSS gradient on the bar: YouTube's incremental DOM recycled upstream's overlay `<div>`, so segments never showed. Skip categories apply immediately.                                                                              |
-| Shorts               | Also removes the newer `lockupViewModel` Shorts tiles.                                                                                                                                                                                                    |
-| Performance          | One `JSON.parse` hook instead of three, no deep clone on every `JSON.stringify`, modern build for webOS 22+ (userScript 272 KB → 85 KB). `pnpm run build:legacy` still targets webOS 1–21.                                                                |
+| Area                 | Change                                                                                                                                                                                                                                                                                                    |
+| -------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Settings             | Native categories inside YouTube's Settings page (real On/Off toggles), plus a rewritten quick panel without the 1.7k-line spatial-navigation polyfill. Swedish/English UI.                                                                                                                               |
+| Settings reset       | Settings are mirrored to IndexedDB and `localStorage.clear()`/`removeItem()` can no longer delete them. YouTube TV wipes its storage in some flows (its storage service calls `localStorage.clear()`), which is what reset the old settings.                                                              |
+| Video launch         | The selected tile flies to full screen (transform-only, ~0.4 s) and stays as a poster with HD thumbnail, title and a loading bar, then cross-fades into the video once playback time advances. The poster sits inside YouTube's player container, so YouTube's controls and prompts always stay above it. |
+| Fixes are always on  | Bug fixes (stuck-video recovery, HD thumbnails) have no switch; only real preferences are in Settings.                                                                                                                                                                                                    |
+| Black loading screen | A playback watchdog detects a video stuck in BUFFERING with nothing loaded and escalates: re-show the video surface → play → seek in place → reopen the video.                                                                                                                                            |
+| Max quality          | Writes YouTube's own `yt-player-quality` preference before playback instead of forcing a quality switch right after start (a known trigger of the webOS 25 black screen).                                                                                                                                 |
+| Thumbnails           | Upgrades every tile type (the current UI uses `<image>`, which upstream missed) by hooking the style/preload assignment – no page-wide MutationObserver, no double loading. Falls back to `sddefault` and then the original when a video has no HD frame.                                                 |
+| SponsorBlock         | Segments are drawn as a CSS gradient on the bar: YouTube's incremental DOM recycled upstream's overlay `<div>`, so segments never showed. Skip categories apply immediately.                                                                                                                              |
+| Shorts               | Also removes the newer `lockupViewModel` Shorts tiles.                                                                                                                                                                                                                                                    |
+| Performance          | One `JSON.parse` hook instead of three, no deep clone on every `JSON.stringify`, modern build for webOS 22+, no CSS source maps decoded at start-up (userScript 272 KB → 82 KB). `pnpm run build:legacy` still targets webOS 1–21.                                                                        |
 
 ---
 
